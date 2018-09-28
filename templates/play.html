@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Play random Spotify album</title>
+</head>
+<body>
+	{% if success %}
+	<p>The random album selected is: {{ album }}</p>
+	{% else %}
+	<p>No random album could be played because: {{ reason }}</p>
+	{% endif %}
+</body>
