@@ -27,9 +27,15 @@ pip install Flask
 
 5. Substitute the values in `flask.sh`
 
-6. Run `flask.sh`
+6. Edit the settings of the application in the dashboard and add this redirect URI
 
-7. Connect to `localhost:5000/` and follow the instructions
+```
+http://localhost:5000/receive-authorization
+```
+
+7. Run `flask.sh`
+
+8. Connect to `localhost:5000/` and follow the instructions
 
 ## Disclaimer
 
