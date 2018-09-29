@@ -9,6 +9,7 @@ from flask import Flask, request, redirect, render_template, session
 
 app = Flask(__name__)
 app.secret_key = b'749f3b1f13331753c9a93f99733e978b'
+BASE_REDIRECT_URI = 'http://localhost:5000/'
 
 
 class Album:
@@ -85,7 +86,8 @@ def give_authorization():
     return render_template('ask-authorization.html',
                            client_id=CLIENT_ID,
                            csrf_token=SESSION.get_csrf_token(),
-                           scopes=" ".join(scopes))
+                           scopes=" ".join(scopes),
+                           redirect_uri=BASE_REDIRECT_URI)
 
 
 @app.route('/receive-authorization')
@@ -113,7 +115,7 @@ def retrieve_access_token():
         response = requests.post("https://accounts.spotify.com/api/token",
                                  data={'grant_type': 'authorization_code',
                                        'code': auth_code,
-                                       'redirect_uri': 'http://localhost:5000/receive-authorization',
+                                       'redirect_uri': BASE_REDIRECT_URI + 'receive-authorization',
                                        'client_id': CLIENT_ID,
                                        'client_secret': CLIENT_SECRET})
         if response.status_code == 200:

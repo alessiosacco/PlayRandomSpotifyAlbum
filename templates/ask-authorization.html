@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Play random Spotify album</title>
-</head>
-<body>
-<p>Please, authorize the app to use your Spotify account to retrieve the list of your albums</p>
-<form method="get" action="https://accounts.spotify.com/authorize">
-    <input type="hidden" name="client_id" value="{{ client_id }}"/>
-    <input type="hidden" name="response_type" value="code"/>
-    <input type="hidden" name="redirect_uri" value="http://localhost:5000/receive-authorization"/>
-    <input type="hidden" name="state" value="{{ csrf_token }}"/>
-    <input type="hidden" name="scope" value=" {{ scopes }}"/>
-    <input type="submit" value="Click here"/>
-</form>
-</body>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Play random Spotify album</title>
+	</head>
+	<body>
+		<p>Please, authorize the app to use your Spotify account to retrieve the list of your albums</p>
+		<form method="get" action="https://accounts.spotify.com/authorize">
+			<input type="hidden" name="client_id" value="{{ client_id }}"/>
+			<input type="hidden" name="response_type" value="code"/>
+			<input type="hidden" name="redirect_uri" value="{{ redirect_uri + 'receive-authorization' }}"/>
+			<input type="hidden" name="state" value="{{ csrf_token }}"/>
+			<input type="hidden" name="scope" value=" {{ scopes }}"/>
+			<input type="submit" value="Click here"/>
+		</form>
+	</body>
 </html>
