@@ -66,9 +66,18 @@ class Session:
         candidates = string.ascii_uppercase + string.digits
         return ''.join(random.choice(candidates) for _ in range(32))
 
+    def get_album_list(self, access_token: string) -> [Album]:
+        albums = ALBUMS.get(access_token, [])
+        return albums
+
+    def set_album_list(self, album_list: [Album], access_token: string):
+        ALBUMS[access_token] = album_list
+
+
 CLIENT_ID = "PLACEHOLDER"
 CLIENT_SECRET = "PLACEHOLDER"
 SESSION = Session()
+ALBUMS = {}
 
 
 @app.route("/")
@@ -134,7 +143,10 @@ def play_random():
     access_token = SESSION.get_access_token()
     is_expired = datetime.datetime.now() > SESSION.get_expiration_time()
     if access_token != '' and not is_expired:
-        albums = get_all_albums(access_token)
+        albums = SESSION.get_album_list(access_token)
+        if albums == []:
+            albums = get_all_albums(access_token)
+            SESSION.set_album_list(albums, access_token)
         selected = select_random_album(albums)
         result = play_album(selected, access_token)
         if result == PlayResponse.SUCCESS:
@@ -167,8 +179,7 @@ def get_all_albums(access_token: string) -> [Album]:
             array_albums = j['items']
             albums = albums + process_albums(array_albums)
         else:
-            app.logger.warning(
-                "The request to get the albums was not successful")
+            app.logger.warning("The request to get the albums was not successful")
             app.logger.debug(response)
     return list(albums)
 
