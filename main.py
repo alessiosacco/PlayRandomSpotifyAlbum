@@ -2,7 +2,6 @@ import datetime
 import random
 import string
 import requests
-import os
 from enum import Enum
 
 from flask import Flask, request, redirect, render_template, session
@@ -67,8 +66,8 @@ class Session:
         candidates = string.ascii_uppercase + string.digits
         return ''.join(random.choice(candidates) for _ in range(32))
 
-CLIENT_ID = os.environ['CLIENT_ID']
-CLIENT_SECRET = os.environ['CLIENT_SECRET']
+CLIENT_ID = "PLACEHOLDER"
+CLIENT_SECRET = "PLACEHOLDER"
 SESSION = Session()
 
 
