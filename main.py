@@ -10,9 +10,6 @@ from flask import Flask, request, redirect, render_template, session
 app = Flask(__name__)
 app.secret_key = b'749f3b1f13331753c9a93f99733e978b'
 
-client_ID = os.environ['CLIENT_ID']
-client_secret = os.environ['CLIENT_SECRET']
-
 
 class Album:
 
@@ -36,53 +33,58 @@ class Album:
         return s
 
 
-def get_csrf_token() -> string:
-    return session['csrf-token'] or ''
+class Session:
 
+    def get_csrf_token(self) -> string:
+        return session['csrf-token'] or ''
 
-def set_csrf_token(token: string):
-    session['csrf-token'] = token
+    def set_csrf_token(self):
+        session['csrf-token'] = self.__generate_token()
 
+    def get_authorization_code(self) -> string:
+        return session['authorization-code']
 
-def get_authorization_code() -> string:
-    return session['authorization-code']
+    def set_authorization_code(self, code: string):
+        session['authorization-code'] = code
 
+    def get_access_token(self) -> string:
+        return session['access-code']
 
-def set_authorization_code(code: string):
-    session['authorization-code'] = code
+    def set_access_token(self, code: string):
+        session['access-code'] = code
 
+    def get_expiration_time(self) -> datetime.datetime:
+        return session['expiration-time']
 
-def get_access_token() -> string:
-    return session['access-code']
+    def set_expiration_time(self, remaining_seconds: string):
+        now = datetime.datetime.now()
+        delta = datetime.timedelta(seconds=int(remaining_seconds))
+        exp_time = now + delta
+        session['expiration-time'] = exp_time
 
+    def __generate_token(self) -> string:
+        candidates = string.ascii_uppercase + string.digits
+        return ''.join(random.choice(candidates) for _ in range(32))
 
-def set_access_token(code: string):
-    session['access-code'] = code
-
-
-def get_expiration_time() -> datetime.datetime:
-    return session['expiration-time']
-
-
-def set_expiration_time(remaining_seconds: string):
-    exp_time = datetime.datetime.now() + datetime.timedelta(seconds=int(remaining_seconds))
-    session['expiration-time'] = exp_time
+CLIENT_ID = os.environ['CLIENT_ID']
+CLIENT_SECRET = os.environ['CLIENT_SECRET']
+SESSION = Session()
 
 
 @app.route("/")
-def hello():
+def index():
     return render_template('index.html')
 
 
 @app.route('/give-authorization', methods=['GET', 'POST'])
 def give_authorization():
-    set_csrf_token(generate_token())
+    SESSION.set_csrf_token()
     scopes = ['user-library-read',
               'user-read-playback-state',
               'user-modify-playback-state']
     return render_template('ask-authorization.html',
-                           client_id=client_ID,
-                           csrf_token=get_csrf_token(),
+                           client_id=CLIENT_ID,
+                           csrf_token=SESSION.get_csrf_token(),
                            scopes=" ".join(scopes))
 
 
@@ -90,10 +92,13 @@ def give_authorization():
 def receive_authorization():
     authorization_code = request.args.get('code', '')
     csrf_token = request.args.get('state', '')
-    if authorization_code == '' or csrf_token == '' or csrf_token != get_csrf_token():
+    saved_token = SESSION.get_csrf_token()
+    if authorization_code == '' \
+            or csrf_token == '' \
+            or csrf_token != saved_token:
         return render_template('authorization-failure.html')
     else:
-        set_authorization_code(authorization_code)
+        SESSION.set_authorization_code(authorization_code)
         retrieve_access_token()
         return redirect('/play-random')
 
@@ -103,20 +108,20 @@ def generate_token() -> string:
 
 
 def retrieve_access_token():
-    auth_code = get_authorization_code()
+    auth_code = SESSION.get_authorization_code()
     if auth_code != "":
         response = requests.post("https://accounts.spotify.com/api/token",
                                  data={'grant_type': 'authorization_code',
                                        'code': auth_code,
                                        'redirect_uri': 'http://localhost:5000/receive-authorization',
-                                       'client_id': client_ID,
-                                       'client_secret': client_secret})
+                                       'client_id': CLIENT_ID,
+                                       'client_secret': CLIENT_SECRET})
         if response.status_code == 200:
             json = response.json()
             app.logger.debug(json['access_token'])
-            set_access_token(json['access_token'])
+            SESSION.set_access_token(json['access_token'])
             app.logger.debug(json['expires_in'])
-            set_expiration_time(json['expires_in'])
+            SESSION.set_expiration_time(json['expires_in'])
             app.logger.debug(json)
         else:
             app.logger.debug(response)
@@ -125,8 +130,9 @@ def retrieve_access_token():
 
 @app.route('/play-random')
 def play_random():
-    access_token = get_access_token()
-    if access_token != '' and datetime.datetime.now() < get_expiration_time():
+    access_token = SESSION.get_access_token()
+    is_expired = datetime.datetime.now() > SESSION.get_expiration_time()
+    if access_token != '' and not is_expired:
         albums = get_all_albums(access_token)
         selected = select_random_album(albums)
         result = play_album(selected, access_token)
@@ -171,7 +177,8 @@ def process_albums(array_albums) -> [Album]:
     for album in array_albums:
         app.logger.debug(album)
         title = album['album']['name']
-        artists = list(map(lambda artist: artist['name'], album['album']['artists']))
+        artists = list(map(lambda artist: artist[
+                       'name'], album['album']['artists']))
         uri = album['album']['uri']
         albums.append(Album(title, artists, uri))
     return albums
