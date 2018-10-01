@@ -21,10 +21,11 @@ def __set_csrf_token(session):
 
 
 def get_csrf_token(session) -> str:
-    token = session['csrf-token'] or ''
-    if token == '':
+    if 'csrf-token' in session:
+        return session['csrf-token']
+    else:
         token = __set_csrf_token(session)
-    return token
+        return token
 
 
 def generate_token() -> str:
@@ -37,7 +38,10 @@ def set_authorization_code(session, auth_code: str):
 
 
 def get_authorization_code(session) -> str:
-    return session['authorization-code'] or ''
+    if 'authorization-code' in session:
+        return session['authorization-code']
+    else:
+        return ''
 
 
 def set_permission_scopes(session, scopes: [str]):
@@ -45,11 +49,17 @@ def set_permission_scopes(session, scopes: [str]):
 
 
 def get_permission_scopes(session):
-    return session['scopes'] or []
+    if 'scopes' in session:
+        return session['scopes']
+    else:
+        return []
 
 
 def get_access_token(session) -> str:
-    return session['access-token'] or ''
+    if 'access-token' in session:
+        return session['access-token']
+    else:
+        return ''
 
 
 def set_access_token(session, access_token: str):
@@ -73,7 +83,10 @@ def set_refresh_token(session, refresh_token: str):
 
 
 def get_refresh_token(session) -> str:
-    return session['refresh-token'] or ''
+    if 'refresh-token' in session:
+        return session['refresh-token']
+    else:
+        return ''
 
 
 class Authorization:
